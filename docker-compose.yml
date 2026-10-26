@@ -1,0 +1,17 @@
+services:
+  youtube-full:
+    build: .
+    image: youtube-full:latest
+    container_name: youtube-full
+    restart: unless-stopped
+    # Pliki w ./downloads należą do Twojego użytkownika, a nie do roota.
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"
+    ports:
+      - "${APP_PORT:-8095}:8000"
+    volumes:
+      - ./downloads:/downloads
+    environment:
+      MAX_PARALLEL_DOWNLOADS: "2"
+    labels:
+      # Tylko sieć lokalna - nie wystawiać przez Traefika/tunel.
+      traefik.enable: "false"

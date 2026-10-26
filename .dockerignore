@@ -1,0 +1,5 @@
+.git
+.venv
+downloads
+**/__pycache__
+*.md

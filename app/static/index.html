@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="YouTube Full">
+<title>YouTube Full</title>
+<style>
+  :root {
+    --bg: #f4f4f6;
+    --card: #ffffff;
+    --text: #17171c;
+    --muted: #6b6b76;
+    --border: #e2e2e8;
+    --accent: #e5262e;
+    --accent-text: #ffffff;
+    --accent-soft: #fde8e9;
+    --ok: #1f8a4c;
+    --error: #c4282f;
+    --track: #ececf1;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f0f12;
+      --card: #1a1a1f;
+      --text: #f1f1f4;
+      --muted: #9a9aa6;
+      --border: #2c2c34;
+      --accent: #ff4048;
+      --accent-text: #ffffff;
+      --accent-soft: #3a1a1c;
+      --ok: #4cc27f;
+      --error: #ff6b70;
+      --track: #2a2a31;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  main { max-width: 680px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  header h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+  .logo { width: 34px; height: 24px; border-radius: 7px; background: var(--accent); display: grid; place-items: center; }
+  .logo::after { content: ""; border-left: 10px solid #fff; border-top: 6px solid transparent; border-bottom: 6px solid transparent; margin-left: 2px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  h2 { font-size: 15px; margin: 0 0 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  form.url { display: flex; gap: 8px; }
+  input[type=url] {
+    flex: 1; min-width: 0; font: inherit; padding: 12px 14px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  }
+  input[type=url]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  button, .btn {
+    font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 12px 18px; cursor: pointer;
+    background: var(--accent); color: var(--accent-text); text-decoration: none; display: inline-flex;
+    align-items: center; justify-content: center; gap: 6px; white-space: nowrap;
+  }
+  button:disabled { opacity: 0.55; cursor: default; }
+  .btn.secondary, button.secondary { background: var(--track); color: var(--text); }
+  .btn.small, button.small { padding: 7px 12px; font-size: 14px; }
+  .msg { margin: 10px 0 0; font-size: 14px; color: var(--muted); }
+  .msg.error { color: var(--error); }
+  .hidden { display: none !important; }
+
+  .video { display: flex; gap: 14px; align-items: flex-start; }
+  .video img { width: 168px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; background: var(--track); flex-shrink: 0; }
+  .video .title { font-weight: 600; margin: 0 0 4px; overflow-wrap: anywhere; }
+  .video .meta { font-size: 14px; color: var(--muted); margin: 0; }
+
+  .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: var(--track); padding: 4px; border-radius: 12px; margin: 16px 0 12px; }
+  .tabs button { background: transparent; color: var(--text); padding: 9px 6px; font-size: 15px; }
+  .tabs button[aria-selected=true] { background: var(--card); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+  .tabs small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+
+  .qualities { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .qualities label {
+    border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .qualities input { position: absolute; opacity: 0; pointer-events: none; }
+  .qualities label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+  .qualities label:has(input:focus-visible) { outline: 2px solid var(--accent); }
+  .qualities .q { font-weight: 600; }
+  .qualities .s { font-size: 13px; color: var(--muted); }
+  .hint { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+  .actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); cursor: pointer; }
+  .check input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+  ul.list { list-style: none; margin: 0; padding: 0; }
+  ul.list li { padding: 12px 0; border-top: 1px solid var(--border); }
+  ul.list li:first-child { border-top: 0; padding-top: 0; }
+  ul.list li:last-child { padding-bottom: 0; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .name { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+  .sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .sub.error { color: var(--error); }
+  .sub.ok { color: var(--ok); }
+  .bar { height: 6px; background: var(--track); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .bar > div { height: 100%; background: var(--accent); width: 0; transition: width 0.4s; }
+  .bar.busy > div { width: 100% !important; animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: 0.4; } }
+  .buttons { display: flex; gap: 6px; flex-shrink: 0; }
+  .empty { color: var(--muted); font-size: 14px; margin: 0; }
+  footer { text-align: center; font-size: 12px; color: var(--muted); margin-top: 24px; }
+
+  @media (max-width: 520px) {
+    main { padding-top: 16px; }
+    .video { flex-direction: column; }
+    .video img { width: 100%; }
+    form.url button { padding: 12px 14px; }
+    .actions button { width: 100%; }
+    .row { align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="logo" aria-hidden="true"></div>
+    <h1>YouTube Full</h1>
+  </header>
+
+  <section class="card">
+    <form class="url" id="url-form">
+      <input type="url" id="url" placeholder="Wklej link do filmu z YouTube" autocomplete="off" required>
+      <button type="submit" id="check-btn">Sprawdź</button>
+    </form>
+    <p class="msg hidden" id="url-msg"></p>
+  </section>
+
+  <section class="card hidden" id="video-card">
+    <div class="video">
+      <img id="thumb" alt="" referrerpolicy="no-referrer">
+      <div>
+        <p class="title" id="title"></p>
+        <p class="meta" id="meta"></p>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" data-kind="mp4">MP4<small>wideo</small></button>
+      <button type="button" role="tab" data-kind="mp3">MP3<small>audio</small></button>
+      <button type="button" role="tab" data-kind="m4a">M4A<small>oryginał</small></button>
+    </div>
+
+    <div class="qualities" id="qualities" role="radiogroup"></div>
+    <p class="hint" id="hint"></p>
+
+    <div class="actions">
+      <label class="check"><input type="checkbox" id="autosave"> Po pobraniu zapisz na tym urządzeniu</label>
+      <button type="button" id="download-btn">Pobierz</button>
+    </div>
+  </section>
+
+  <section class="card hidden" id="jobs-card">
+    <h2>Pobieranie</h2>
+    <ul class="list" id="jobs"></ul>
+  </section>
+
+  <section class="card">
+    <h2>Pobrane pliki</h2>
+    <ul class="list" id="files"></ul>
+  </section>
+
+  <footer id="footer"></footer>
+</main>
+
+<script>
+const $ = (sel) => document.querySelector(sel);
+const ACTIVE = new Set(["queued", "downloading", "processing"]);
+const KIND_HINTS = {
+  mp4: "Przy tej samej rozdzielczości wybierany jest H.264 - działa na każdym telefonie i w QuickTime. Powyżej 1080p YouTube często ma tylko VP9/AV1, które starsze urządzenia mogą odtwarzać gorzej.",
+  m4a: "Dźwięk dokładnie taki, jaki jest na YouTube - bez ponownej kompresji. Najlepsza jakość, działa na iPhonie i Androidzie.",
+};
+
+const state = { info: null, kind: "mp4", quality: null, mine: new Set(), saved: new Set(), jobs: [] };
+let pollTimer = null;
+
+function store(key, value) {
+  try {
+    if (value === undefined) return localStorage.getItem(key);
+    localStorage.setItem(key, value);
+  } catch { return null; }
+}
+
+function esc(text) {
+  return String(text ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+
+function formatSize(bytes) {
+  if (!bytes) return "";
+  const units = ["B", "KB", "MB", "GB"];
+  let i = 0;
+  while (bytes >= 1024 && i < units.length - 1) { bytes /= 1024; i++; }
+  return `${bytes.toLocaleString("pl-PL", { maximumFractionDigits: i >= 2 ? 1 : 0 })} ${units[i]}`;
+}
+
+function formatTime(seconds) {
+  if (seconds == null) return "";
+  seconds = Math.round(seconds);
+  const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60), s = seconds % 60;
+  const mm = h ? String(m).padStart(2, "0") : m;
+  return `${h ? h + ":" : ""}${mm}:${String(s).padStart(2, "0")}`;
+}
+
+async function api(path, options = {}) {
+  const res = await fetch(path, { headers: { "Content-Type": "application/json" }, ...options });
+  if (res.status === 204) return null;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : `Błąd serwera (${res.status})`);
+  return data;
+}
+
+function showMessage(text, isError = false) {
+  const el = $("#url-msg");
+  el.textContent = text;
+  el.classList.toggle("error", isError);
+  el.classList.toggle("hidden", !text);
+}
+
+// --- Sprawdzanie filmu ---
+
+async function checkUrl() {
+  const url = $("#url").value.trim();
+  if (!url) return;
+  $("#check-btn").disabled = true;
+  $("#video-card").classList.add("hidden");
+  showMessage("Sprawdzam film…");
+  try {
+    state.info = await api("/api/info", { method: "POST", body: JSON.stringify({ url }) });
+    showMessage("");
+    renderVideo();
+  } catch (err) {
+    showMessage(err.message, true);
+  } finally {
+    $("#check-btn").disabled = false;
+  }
+}
+
+function renderVideo() {
+  const info = state.info;
+  $("#thumb").src = info.thumbnail || "";
+  $("#title").textContent = info.title;
+  $("#meta").textContent = [info.channel, formatTime(info.duration)].filter(Boolean).join(" · ");
+  $("#video-card").classList.remove("hidden");
+  selectKind(state.kind);
+}
+
+function qualityChoices() {
+  const { video, audio } = state.info;
+  const duration = state.info.duration || 0;
+  if (state.kind === "mp4") {
+    return video.map((v) => ({ value: v.value, label: v.label, size: v.size }));
+  }
+  if (state.kind === "mp3") {
+    return audio.mp3_bitrates.map((kbps) => ({ value: kbps, label: `${kbps} kbps`, size: duration * kbps * 125 }));
+  }
+  const kbps = audio.source_kbps ? `~${audio.source_kbps} kbps` : "oryginalna jakość";
+  return [{ value: 0, label: kbps, size: audio.m4a_size }];
+}
+
+function defaultQuality(choices) {
+  if (state.kind === "mp4") return (choices.find((c) => c.value <= 1080) || choices[0])?.value;
+  if (state.kind === "mp3") return 192;
+  return 0;
+}
+
+function selectKind(kind) {
+  state.kind = kind;
+  document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", b.dataset.kind === kind));
+  const choices = qualityChoices();
+  state.quality = defaultQuality(choices);
+
+  $("#qualities").innerHTML = choices.map((c) => `
+    <label>
+      <input type="radio" name="quality" value="${c.value}" ${c.value === state.quality ? "checked" : ""}>
+      <span class="q">${esc(c.label)}</span>
+      <span class="s">${c.size ? "~" + formatSize(c.size) : "&nbsp;"}</span>
+    </label>`).join("") || `<p class="empty">Brak dostępnych formatów wideo.</p>`;
+
+  let hint = KIND_HINTS[kind] || "";
+  if (kind === "mp3" && state.info.audio.source_kbps) {
+    hint = `Dźwięk na YouTube ma ok. ${state.info.audio.source_kbps} kbps - wyższy bitrate MP3 da większy plik, ale nie lepszą jakość. 192 kbps to rozsądny wybór.`;
+  }
+  $("#hint").textContent = hint;
+  $("#download-btn").disabled = !choices.length;
+}
+
+// --- Pobieranie ---
+
+async function startDownload() {
+  const info = state.info;
+  const btn = $("#download-btn");
+  btn.disabled = true;
+  try {
+    const job = await api("/api/downloads", {
+      method: "POST",
+      body: JSON.stringify({ url: info.url, kind: state.kind, quality: state.quality || null, title: info.title }),
+    });
+    state.mine.add(job.id);
+    await refreshJobs();
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function jobTag(job) {
+  if (job.kind === "mp4") return `MP4 ${job.quality}p`;
+  if (job.kind === "mp3") return `MP3 ${job.quality} kbps`;
+  return "M4A";
+}
+
+function jobStatus(job) {
+  if (job.status === "error") return `<div class="sub error">${esc(job.error)}</div>`;
+  if (job.status === "done") return `<div class="sub ok">Gotowe</div>`;
+  const parts = [job.phase];
+  if (job.status === "downloading") {
+    parts.push(`${Math.round(job.progress)}%`);
+    if (job.speed) parts.push(`${formatSize(job.speed)}/s`);
+    if (job.eta != null) parts.push(`zostało ${formatTime(job.eta)}`);
+  }
+  const busy = job.status !== "downloading";
+  return `<div class="sub">${esc(parts.join(" · "))}</div>
+    <div class="bar ${busy ? "busy" : ""}"><div style="width:${job.progress}%"></div></div>`;
+}
+
+function fileUrl(name) {
+  return `/api/files/${encodeURIComponent(name)}`;
+}
+
+function renderJobs() {
+  const jobs = state.jobs;
+  $("#jobs-card").classList.toggle("hidden", !jobs.length);
+  $("#jobs").innerHTML = jobs.map((job) => `
+    <li>
+      <div class="row">
+        <div>
+          <div class="name">${esc(job.title)}</div>
+          <div class="sub">${esc(jobTag(job))}</div>
+        </div>
+        ${job.status === "done" ? `<div class="buttons"><a class="btn small" href="${fileUrl(job.filename)}" download>Zapisz</a></div>` : ""}
+      </div>
+      ${jobStatus(job)}
+    </li>`).join("");
+}
+
+function saveToDevice(name) {
+  const a = document.createElement("a");
+  a.href = fileUrl(name);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+async function refreshJobs() {
+  try {
+    const previous = new Map(state.jobs.map((j) => [j.id, j.status]));
+    state.jobs = await api("/api/downloads");
+    let finished = false;
+    for (const job of state.jobs) {
+      if (job.status === "done" && previous.get(job.id) !== "done") finished = true;
+      if (job.status === "done" && state.mine.has(job.id) && !state.saved.has(job.id)) {
+        state.saved.add(job.id);
+        if ($("#autosave").checked) saveToDevice(job.filename);
+      }
+    }
+    renderJobs();
+    if (finished) refreshFiles();
+  } catch { /* chwilowy brak połączenia - spróbujemy przy następnym odświeżeniu */ }
+
+  clearTimeout(pollTimer);
+  const active = state.jobs.some((j) => ACTIVE.has(j.status));
+  pollTimer = setTimeout(refreshJobs, active ? 1000 : 5000);
+}
+
+// --- Pliki na serwerze ---
+
+async function refreshFiles() {
+  try {
+    const files = await api("/api/files");
+    $("#files").innerHTML = files.length ? files.map((f) => `
+      <li class="row">
+        <div>
+          <div class="name">${esc(f.name)}</div>
+          <div class="sub">${formatSize(f.size)} · ${new Date(f.modified * 1000).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" })}</div>
+        </div>
+        <div class="buttons">
+          <a class="btn small" href="${fileUrl(f.name)}" download>Zapisz</a>
+          <button type="button" class="small secondary" data-delete="${esc(f.name)}">Usuń</button>
+        </div>
+      </li>`).join("") : `<li><p class="empty">Nic jeszcze nie pobrano.</p></li>`;
+  } catch (err) {
+    $("#files").innerHTML = `<li><p class="empty">Nie udało się wczytać listy: ${esc(err.message)}</p></li>`;
+  }
+}
+
+async function deleteFile(name) {
+  if (!confirm(`Usunąć plik z serwera?\n\n${name}`)) return;
+  try {
+    await api(fileUrl(name), { method: "DELETE" });
+  } catch (err) {
+    alert(err.message);
+  }
+  refreshFiles();
+}
+
+// --- Start ---
+
+$("#url-form").addEventListener("submit", (e) => { e.preventDefault(); checkUrl(); });
+$("#url").addEventListener("paste", () => setTimeout(checkUrl, 0));
+document.querySelector(".tabs").addEventListener("click", (e) => {
+  const tab = e.target.closest("button[data-kind]");
+  if (tab && state.info) selectKind(tab.dataset.kind);
+});
+$("#qualities").addEventListener("change", (e) => { state.quality = Number(e.target.value); });
+$("#download-btn").addEventListener("click", startDownload);
+$("#files").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-delete]");
+  if (btn) deleteFile(btn.dataset.delete);
+});
+
+$("#autosave").checked = store("autosave") !== "0";
+$("#autosave").addEventListener("change", (e) => store("autosave", e.target.checked ? "1" : "0"));
+
+api("/api/health").then((h) => { $("#footer").textContent = `yt-dlp ${h.yt_dlp}`; }).catch(() => {});
+refreshJobs();
+refreshFiles();
+</script>
+</body>
+</html>
